@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "564003713634",
+    "project_id": "orca-base-1e338",
+    "storage_bucket": "orca-base-1e338.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:564003713634:android:4e9b94ddbcc21347bb173b",
+        "android_client_info": {
+          "package_name": "com.example.orca"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCb_uwygkik_5ukJuqt7BW-B0qKVD_3xHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
