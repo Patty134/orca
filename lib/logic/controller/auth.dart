@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:orca/logic/provider/auth.dart';
-import 'package:orca/pages/home/home.dart';
+import 'package:orca/pages/home/home_c.dart';
 
 class AuthController extends GetxController {
   Future<void> signUp(String name, String email, String password,

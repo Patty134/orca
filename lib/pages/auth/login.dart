@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:orca/pages/divider/divide.dart';
+import 'package:orca/pages/home/home_c.dart';
 import 'signup.dart'; // Import your existing Signup screen
 
 class Login extends StatelessWidget {
@@ -40,34 +42,60 @@ class Login extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Email TextField
+                // Email TextField with Shadow
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Email",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide: BorderSide.none,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Email",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // Password TextField
+                const SizedBox(height: 30),
+                // Password TextField with Shadow
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: TextField(
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Password",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide: BorderSide.none,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: TextField(
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "Password",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ),
@@ -87,9 +115,15 @@ class Login extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // Login Button
+                // Login Button with Shadow
                 ElevatedButton(
                   onPressed: () {
+                    // Navigate to HomePage when the button is pressed
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ClassifyPage()),
+                    );
                     // Add login functionality
                   },
                   style: ElevatedButton.styleFrom(
@@ -101,6 +135,7 @@ class Login extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                     ),
+                    elevation: 10, // Add elevation for shadow effect
                   ),
                   child: const Text(
                     "Login",
