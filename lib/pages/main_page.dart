@@ -4,6 +4,7 @@ import 'package:orca/logic/bloc/splash_bloc.dart';
 import 'package:orca/logic/bloc/splash_state.dart';
 import 'package:orca/pages/auth/login.dart';
 import 'package:orca/pages/auth/signup.dart';
+import 'package:orca/pages/home/home_c.dart';
 import 'package:orca/pages/splash/splash.dart';
 
 class MainPage extends StatefulWidget {
@@ -22,6 +23,8 @@ class _MainPageState extends State<MainPage> {
           return SplashPage();
         } else if (state is AuthState) {
           return Login();
+        } else if (state is HomeState) {
+          return HomePage();
         } else {
           return SplashPage();
         }

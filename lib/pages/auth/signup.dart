@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:orca/logic/controller/auth.dart';
-import 'package:orca/pages/home/home_c.dart';
 
 class Signup extends ConsumerStatefulWidget {
   const Signup({super.key});
@@ -184,6 +183,10 @@ class _SignupState extends ConsumerState<Signup> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter a password';
                                 }
+                                if (value.length < 8) {
+                                  return 'Password should be at least 8 characters';
+                                }
+
                                 return null;
                               },
                             ),
@@ -253,13 +256,7 @@ class _SignupState extends ConsumerState<Signup> {
                                   _passwordController.text,
                                   context,
                                   ref);
-                              // Navigate to HomePage when the button is pressed
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const HomePage()),
-                              );
-                            } else {}
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
@@ -279,6 +276,18 @@ class _SignupState extends ConsumerState<Signup> {
                               fontSize: 16,
                               color: Colors.white,
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Google Icon Button
+                        IconButton(
+                          onPressed: () {
+                            ctrl.googleSignin(context);
+                          },
+                          icon: Image.asset(
+                            'assets/image/google_icon.png', // Path to your Google icon asset
+                            height: 40,
+                            width: 40,
                           ),
                         ),
                       ],

@@ -45,6 +45,9 @@ dependencies:
   uuid: ^4.5.1
   carousel_slider: ^5.0.0
   font_awesome_flutter: ^10.5.1
+  connectivity_plus: ^6.1.1
+  shared_preferences: ^2.3.4
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +77,7 @@ flutter:
     - assets/image/Main_Screen_C.png
     - assets/image/IntrestsC.png
     - assets/image/Explore.png
+    - assets/image/google_icon.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

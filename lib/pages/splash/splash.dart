@@ -12,19 +12,6 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> {
   @override
-  void initState() {
-    super.initState();
-    // Set up a timer to navigate to the next screen after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      // Navigate to the next screen (replace with your target page)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Login()),
-      );
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(

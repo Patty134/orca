@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orca/logic/controller/auth.dart';
 import 'package:orca/pages/home/home_c.dart';
 
-class FreelancePage extends StatefulWidget {
+class FreelancePage extends ConsumerStatefulWidget {
   const FreelancePage({super.key});
 
   @override
-  State<FreelancePage> createState() => _FreelancePageState();
+  ConsumerState<FreelancePage> createState() => _FreelancePageState();
 }
 
-class _FreelancePageState extends State<FreelancePage> {
+class _FreelancePageState extends ConsumerState<FreelancePage> {
+  AuthController _authController = AuthController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,9 +136,10 @@ class _FreelancePageState extends State<FreelancePage> {
           BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
-        onTap: (index) {
-          String label = ['Home', 'Jobs', 'Profile'][index];
-          print('$label button clicked');
+        onTap: (value) {
+          if (value == 0) {
+            _authController.signOut(context, ref);
+          }
         },
       ),
     );
