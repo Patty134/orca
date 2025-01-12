@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:orca/firebase_options.dart';
 import 'package:orca/logic/bloc/splash_bloc.dart';
 import 'package:orca/logic/dependancies.dart';
+import 'package:orca/pages/client_side/profilec.dart';
+import 'package:orca/pages/freelance_side/chatsf.dart';
 import 'package:orca/pages/main_page.dart';
 //import 'package:orca/pages/auth/login.dart';
 //import 'package:orca/pages/divider/divide.dart';
@@ -13,7 +15,7 @@ import 'package:orca/pages/main_page.dart';
 //import 'package:orca/pages/home/home_c.dart';
 //import 'package:orca/pages/home/home_f.dart';
 //import 'package:orca/pages/main_page.dart';
-import 'package:orca/pages/splash/splash.dart';
+//import 'package:orca/pages/splash/splash.dart';
 //import 'package:orca/pages/main_page.dart';
 
 Future<void> main() async {
@@ -42,6 +44,7 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           home: MainPage(),
+          //home: ChatPage(),
         ),
       ),
     );

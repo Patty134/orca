@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orca/logic/controller/auth.dart';
+import 'package:orca/pages/client_side/profilec.dart';
+import 'package:orca/pages/freelance_side/profilef.dart';
 import 'package:orca/pages/home/home_c.dart';
 
 class FreelancePage extends ConsumerStatefulWidget {
@@ -12,13 +14,27 @@ class FreelancePage extends ConsumerStatefulWidget {
 
 class _FreelancePageState extends ConsumerState<FreelancePage> {
   AuthController _authController = AuthController();
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _navigateWithFade(BuildContext context, Widget targetPage) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => targetPage,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         toolbarHeight: 90,
-        leadingWidth: 200, // Adjust width to fit all items properly
+        leadingWidth: 200,
         leading: Padding(
           padding: const EdgeInsets.only(left: 10),
           child: Row(
@@ -28,16 +44,16 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
                 icon: const Icon(Icons.menu),
                 iconSize: 30,
                 onPressed: () {
-                  print("Menu Button Pressed");
+                  _scaffoldKey.currentState?.openDrawer();
                 },
               ),
-              const SizedBox(width: 8), // Add consistent spacing
+              const SizedBox(width: 8),
               const CircleAvatar(
                 radius: 20,
-                backgroundImage: AssetImage('assets/image/Profile_pic.png'),
+                backgroundImage: AssetImage('assets/image/profile_pict.png'),
                 backgroundColor: Colors.grey,
               ),
-              const SizedBox(width: 8), // Adjust spacing to reduce the gap
+              const SizedBox(width: 8),
               const Text(
                 "Hi User",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -57,11 +73,7 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
             ),
             child: TextButton(
               onPressed: () {
-                // Navigate to HomePage when the button is pressed
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
+                _navigateWithFade(context, const HomePage());
               },
               child: const Text(
                 "Switch to Buying",
@@ -71,18 +83,60 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
           ),
         ],
       ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            const UserAccountsDrawerHeader(
+              accountName: Text("User"),
+              accountEmail: Text("user@example.com"),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: AssetImage('assets/image/Profile_pic.png'),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                _navigateWithFade(context, const FreelancePage());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.list_alt),
+              title: const Text('Orders'),
+              onTap: () {
+                print("Navigating to Orders...");
+              },
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ListTile(
+                leading: const Icon(Icons.exit_to_app),
+                title: const Text('Logout'),
+                onTap: () {
+                  _authController.signOut(context, ref);
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  hintText: "Search",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(30)),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              child: SizedBox(
+                height: 60,
+                child: TextField(
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: "Search...",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                    ),
                   ),
                 ),
               ),
@@ -108,6 +162,7 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
                 ],
               ),
             ),
+            const SizedBox(height: 10),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
@@ -125,6 +180,7 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
                     "2 Years"),
                 jobCard("Blender Artist", "Red-Chillies", "Mumbai", "Full-Time",
                     "3 Years"),
+                const SizedBox(height: 20),
               ],
             ),
           ],
@@ -132,13 +188,28 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(
+              icon: Padding(
+                padding: EdgeInsets.all(2.0),
+                child: Icon(Icons.home),
+              ),
+              label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.chat_rounded), label: "Chats"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle), label: "Profile"),
         ],
-        onTap: (value) {
-          if (value == 0) {
-            _authController.signOut(context, ref);
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              _navigateWithFade(context, const FreelancePage());
+              break;
+            case 1:
+              // Navigate to Chats page if it exists
+              break;
+            case 2:
+              _navigateWithFade(context, const FreelancerProfilePage());
+              break;
           }
         },
       ),
@@ -150,12 +221,11 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
     return Card(
       margin: const EdgeInsets.all(8.0),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12), // Rounded corners
+        borderRadius: BorderRadius.circular(12),
       ),
-      elevation: 6, // Adding shadow effect
+      elevation: 6,
       shadowColor: Colors.grey.withOpacity(0.3),
-      color:
-          Colors.lightBlue.shade100, // Sky blue color for the card background
+      color: Colors.lightBlue.shade100,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

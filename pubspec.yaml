@@ -48,6 +48,7 @@ dependencies:
   connectivity_plus: ^6.1.1
   shared_preferences: ^2.3.4
   google_sign_in: ^6.2.2
+  file_picker: ^8.1.7
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +79,7 @@ flutter:
     - assets/image/IntrestsC.png
     - assets/image/Explore.png
     - assets/image/google_icon.png
+    - assets/image/zomato-logo.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

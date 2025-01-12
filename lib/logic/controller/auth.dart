@@ -7,44 +7,43 @@ import 'package:orca/data/repositories/googleServices.dart';
 import 'package:orca/logic/provider/auth.dart';
 import 'package:orca/logic/provider/user.dart';
 import 'package:orca/pages/auth/login.dart';
-import 'package:orca/pages/auth/signup.dart';
 import 'package:orca/pages/home/home_c.dart';
 
 class AuthController extends GetxController {
   Future<void> signUp(String name, String email, String password,
       BuildContext context, WidgetRef ref) async {
     try {
-      // Attempt to sign up the user
       await ref
           .watch(authProvider.notifier)
           .signUp(email, name, password, context)
-          .then(
-        (value) async {
-          if (value["state"] == "success") {
-            final userModel = UserModel(
-                email: email,
-                password: password,
-                name: name,
-                image: "",
-                phone: "");
-            await ref
-                .watch(userStateProvider.notifier)
-                .updateDataState(userModel);
+          .then((value) async {
+        if (value["state"] == "success") {
+          final userModel = UserModel(
+              email: email,
+              password: password,
+              name: name,
+              image: "",
+              phone: "");
+          await ref
+              .watch(userStateProvider.notifier)
+              .updateDataState(userModel);
 
-            Navigator.pushReplacement(
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => HomePage(),
-                ));
-          } else {}
-        },
-      );
+                ),
+              );
+            }
+          });
+        }
+      });
     } on FirebaseAuthException catch (e) {
-      // Show error message if sign-up fails
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message.toString())),
       );
-      // Do not navigate if there's an exception
     }
   }
 
@@ -53,24 +52,24 @@ class AuthController extends GetxController {
     await ref
         .watch(authProvider.notifier)
         .signIn(email, password, context)
-        .then(
-      (value) async {
-        if (value["state"] == "success") {
-          final userModel = UserModel(
-              email: email, password: password, name: "", image: "", phone: "");
-          await ref
-              .watch(userStateProvider.notifier)
-              .updateDataState(userModel);
+        .then((value) async {
+      if (value["state"] == "success") {
+        final userModel = UserModel(
+            email: email, password: password, name: "", image: "", phone: "");
+        await ref.watch(userStateProvider.notifier).updateDataState(userModel);
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HomePage(),
-            ),
-          );
-        }
-      },
-    );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomePage(),
+              ),
+            );
+          }
+        });
+      }
+    });
   }
 
   Future<void> googleSignin(BuildContext context) async {
@@ -79,11 +78,16 @@ class AuthController extends GetxController {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Google signin Successful")));
 
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(),
-          ));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomePage(),
+            ),
+          );
+        }
+      });
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.message.toString())));
@@ -93,10 +97,16 @@ class AuthController extends GetxController {
   Future<void> signOut(BuildContext context, WidgetRef ref) async {
     await ref.watch(authProvider.notifier).signOut(context);
     ref.watch(userStateProvider.notifier).deleteDataState();
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Login(),
-        ));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Login(),
+          ),
+        );
+      }
+    });
   }
 }
