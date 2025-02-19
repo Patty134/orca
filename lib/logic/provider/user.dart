@@ -26,7 +26,7 @@ class UserDataManager extends StateNotifier<UserModel> {
 
   Future<void> deleteDataState() async {
     state = UserModel();
-    await _userStore.deleteData();
+    // await _userStore.deleteData();
   }
 }
 

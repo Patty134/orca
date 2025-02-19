@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:orca/pages/client_side/3dIntrests.dart';
 import 'package:orca/pages/welcome.dart';
 
 class TwoDInterestPage extends StatefulWidget {
@@ -29,19 +32,42 @@ class _TwoDInterestPageState extends State<TwoDInterestPage> {
   }
 
   // This method logs selected options and navigates to WelcomePage
-  void _submit() {
+  Future<void> _submit() async {
     print('Selected checkboxes:');
+
+    List<String> selectedOptions = [];
     for (int i = 0; i < _checkboxValues.length; i++) {
       if (_checkboxValues[i]) {
-        print('${_options[i]} selected');
+        selectedOptions.add(_options[i]);
       }
     }
 
-    // Navigate to WelcomePage
+    await sendToUserDoc(selectedOptions);
+    // Navigate to ThreeDInterestPage
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => WelcomePage()),
+      MaterialPageRoute(builder: (context) => ThreeDInterestPage()),
     );
+  }
+
+  Future<void> sendToUserDoc(List<String> selectedOptions) async {
+    // Get the current user's UID
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("No user is signed in");
+      return;
+    }
+    String userId = user.uid;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection("preferences")
+          .doc(userId)
+          .set({"selection": selectedOptions}, SetOptions(merge: true));
+      print("Data sent to Firestore");
+    } on FirebaseException catch (e) {
+      print("Error sending data to Firestore: ${e.message}");
+    }
   }
 
   @override

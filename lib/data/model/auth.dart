@@ -7,6 +7,8 @@ class UserModel {
   String? password;
   String? phone;
   String? image;
+  String? identity;
+  String? description;
 
   UserModel({
     String? id,
@@ -15,6 +17,8 @@ class UserModel {
     this.password,
     this.phone,
     this.image,
+    this.identity,
+    this.description,
   }) : id = id ?? Uuid().v1() ?? "";
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,8 @@ class UserModel {
       password: json['password'] ?? "",
       phone: json['phone'] ?? "",
       image: json['image'] ?? "",
+      identity: json['identity'] ?? "",
+      description: json['description'] ?? "",
     );
   }
 
@@ -36,6 +42,8 @@ class UserModel {
       'password': password,
       'phone': phone,
       'image': image != null ? image!.toString() : null,
+      'identity': identity,
+      "description": description,
     };
   }
 }

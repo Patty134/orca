@@ -3,6 +3,9 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:orca/data/model/auth.dart';
+import 'package:orca/data/storage/user_Data.dart';
 import 'package:orca/logic/controller/auth.dart';
 import 'package:orca/pages/client_side/profilec.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,6 +51,8 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   void initState() {
     super.initState();
+
+    userload();
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -120,6 +125,16 @@ class _HomePageState extends ConsumerState<HomePage>
     return downloadUrls;
   }
 
+  UserModel userDataModel = UserModel();
+  void userload() async {
+    UserStore userStore = UserStore();
+    final userDataModels = await userStore.loadData();
+
+    setState(() {
+      userDataModel = userDataModels;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,23 +147,36 @@ class _HomePageState extends ConsumerState<HomePage>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.menu),
-                iconSize: 30,
-                onPressed: () {
-                  _scaffoldKey.currentState?.openDrawer();
-                },
+              Flexible(
+                flex: 1,
+                child: IconButton(
+                  icon: const Icon(Icons.menu),
+                  iconSize: 30,
+                  onPressed: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
               ),
-              const SizedBox(width: 8),
-              const CircleAvatar(
+              Gap(10),
+              CircleAvatar(
                 radius: 20,
-                backgroundImage: AssetImage('assets/image/profile_pict.png'),
+                backgroundImage: NetworkImage(userDataModel.image != null &&
+                        userDataModel.image!.isNotEmpty
+                    ? userDataModel.image ??
+                        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                    : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"),
                 backgroundColor: Colors.grey,
               ),
-              const SizedBox(width: 8),
-              const Text(
-                "Hi User",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Gap(10),
+              Flexible(
+                flex: 2,
+                child: Text(
+                  "Hi ${userDataModel.name != null ? userDataModel.name![0].toUpperCase() + userDataModel.name!.substring(1).toLowerCase() : ""}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

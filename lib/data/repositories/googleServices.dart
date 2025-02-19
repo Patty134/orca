@@ -4,7 +4,7 @@ import 'package:orca/data/model/auth.dart';
 import 'package:orca/data/storage/user_Data.dart';
 
 class AuthService {
-  Future<UserCredential> signWithGoogle() async {
+  Future<UserCredential> signWithGoogle(Function(bool) isAuthFirst) async {
     final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
 
     final GoogleSignInAuthentication gauth = await gUser!.authentication;
@@ -16,10 +16,19 @@ class AuthService {
 
     UserStore userStore = UserStore();
 
+    UserModel userModel = await userStore.loadData();
+    if (userModel.name!.isNotEmpty) {
+      print("User is Authenticated");
+      isAuthFirst(true);
+    } else {
+      print("User is not Authenticated");
+      isAuthFirst(false);
+    }
+
     final userCredential =
         await FirebaseAuth.instance.signInWithCredential(credential);
 
-    final userModel = UserModel(
+    userModel = UserModel(
         email: userCredential.user?.email ?? "",
         name: userCredential.user?.displayName ?? "",
         password: "",
