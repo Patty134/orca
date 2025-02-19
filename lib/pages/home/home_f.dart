@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:orca/logic/controller/auth.dart';
-import 'package:orca/pages/client_side/profilec.dart';
+import 'package:orca/pages/freelance_side/jobdetailspage.dart';
 import 'package:orca/pages/freelance_side/profilef.dart';
-import 'package:orca/pages/home/home_c.dart';
+import 'package:orca/pages/splash/splashpagef.dart';
 
 class FreelancePage extends ConsumerStatefulWidget {
   const FreelancePage({super.key});
@@ -68,12 +70,12 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
             margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.purple,
+              color: const Color.fromARGB(255, 0, 54, 126),
               borderRadius: BorderRadius.circular(5),
             ),
             child: TextButton(
               onPressed: () {
-                _navigateWithFade(context, const HomePage());
+                _navigateWithFade(context, SplashF());
               },
               child: const Text(
                 "Switch to Buying",
@@ -122,68 +124,120 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: SizedBox(
-                height: 60,
-                child: TextField(
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: "Search...",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
-                    ),
-                  ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.fromARGB(255, 33, 95, 211), // Start color
+              Color.fromARGB(255, 122, 167, 252), // End color
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  "Recommended Jobs",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                "Recommended Job",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance.collection('jobs').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No jobs available'));
+                  }
+
+                  final jobs = snapshot.data!.docs;
+
+                  return CarouselSlider(
+                    options: CarouselOptions(
+                      height: 200,
+                      enlargeCenterPage: true,
+                      enableInfiniteScroll: false,
+                      autoPlay: true,
+                    ),
+                    items: jobs.map((job) {
+                      final jobData = job.data() as Map<String, dynamic>;
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return Container(
+                            width: MediaQuery.of(context).size.width *
+                                0.8, // Limit the width of the job card
+                            child: jobCard(
+                              jobData['jobTitle']?.toString() ?? 'No Title',
+                              jobData['jobDesc']?.toString() ??
+                                  'No Description',
+                              jobData['category']?.toString() ?? 'No Category',
+                              Map<String, bool>.from(jobData['fields'] as Map),
+                              List<String>.from(jobData['images']
+                                  as List), // Pass image URLs to jobCard
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  );
+                },
               ),
-            ),
-            SizedBox(
-              height: 200,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  jobCard("Graphic Designer", "Red Chillies Entertainment",
-                      "Mumbai  ", "Full-Time  ", "2-3 Years"),
-                  jobCard("Sketching Artist", "Sketch Studio", "Bangalore  ",
-                      "Full-Time  ", "2 Years"),
-                  jobCard("Blender Artist", "Red-Chillies", "Mumbai  ",
-                      "Full-Time  ", "3 Years"),
-                ],
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+                child: Text(
+                  "Recent Jobs Posted",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                "New Posted Jobs",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance.collection('jobs').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No jobs available'));
+                  }
+
+                  final jobs = snapshot.data!.docs;
+
+                  return Column(
+                    children: jobs.map((job) {
+                      final jobData = job.data() as Map<String, dynamic>;
+                      return Container(
+                        width: double
+                            .infinity, // Make the job card fit the width of the screen
+                        child: jobCard(
+                          jobData['jobTitle']?.toString() ?? 'No Title',
+                          jobData['jobDesc']?.toString() ?? 'No Description',
+                          jobData['category']?.toString() ?? 'No Category',
+                          Map<String, bool>.from(jobData['fields'] as Map),
+                          List<String>.from(jobData['images']
+                              as List), // Pass image URLs to jobCard
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
-            ),
-            Column(
-              children: [
-                jobCard(
-                    "Illustrator", "Zomato", "Mumbai", "Part-Time", "2 Years"),
-                jobCard("Roto Artist", "GT Studio", "Bangalore", "Full-Time",
-                    "5 Years"),
-                jobCard("Sketching Artist", "Blinkit", "Mumbai", "Full-Time",
-                    "2 Years"),
-                jobCard("Blender Artist", "Red-Chillies", "Mumbai", "Full-Time",
-                    "3 Years"),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -216,46 +270,78 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
     );
   }
 
-  Widget jobCard(String title, String company, String location, String type,
-      String experience) {
-    return Card(
-      margin: const EdgeInsets.all(8.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 6,
-      shadowColor: Colors.grey.withOpacity(0.3),
-      color: Colors.lightBlue.shade100,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black)),
-            const SizedBox(height: 5),
-            Text(company,
-                style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: 14, height: 1.5)),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  String truncateDescription(String description, int wordLimit) {
+    final words = description.split(' ');
+    if (words.length > wordLimit) {
+      return words.take(wordLimit).join(' ') + '...';
+    }
+    return description;
+  }
+
+  String mapCategory(String category) {
+    switch (category) {
+      case '0':
+        return '2D';
+      case '1':
+        return '3D';
+      case '2':
+        return 'Both';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  Widget jobCard(String title, String jobDesc, String category,
+      Map<String, bool> fields, List<String> imageUrls) {
+    final trueFields = fields.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JobDetailPage(
+              title: title,
+              jobDesc: jobDesc,
+              category: mapCategory(category),
+              fields: trueFields,
+              imageUrls: imageUrls, // Pass imageUrls to JobDetailPage
+            ),
+          ),
+        );
+      },
+      child: Card(
+        color: Colors.blue.shade50,
+        margin: const EdgeInsets.all(10),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            // Wrap the Column with SingleChildScrollView
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(location,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.blueGrey.shade600)),
-                Text(type,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.blueGrey.shade600)),
-                Text(experience,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.blueGrey.shade600)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(truncateDescription(jobDesc, 10)),
+                const SizedBox(height: 8),
+                Text(mapCategory(category)),
+                const SizedBox(height: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: trueFields.map((field) => Text(field)).toList(),
+                ),
+                const SizedBox(
+                    height: 1), // Add a small height to prevent overflow
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

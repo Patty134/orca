@@ -1,12 +1,19 @@
 import 'dart:io';
-
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orca/logic/controller/auth.dart';
 import 'package:orca/pages/client_side/profilec.dart';
-import 'package:orca/pages/home/home_f.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:orca/pages/client_side/showcase/3dmodel.dart';
+import 'package:orca/pages/client_side/showcase/illustration.dart';
+import 'package:orca/pages/client_side/showcase/painting.dart';
+import 'package:orca/pages/client_side/showcase/sketching.dart';
+import 'package:orca/pages/splash/splash_profile_c.dart';
+import 'package:orca/pages/splash/splashpagec.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -15,7 +22,8 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> {
+class _HomePageState extends ConsumerState<HomePage>
+    with TickerProviderStateMixin {
   final List<Map<String, String>> imgList = [
     {'image': 'assets/image/pic_1.jpg', 'text': 'Sketching'},
     {'image': 'assets/image/pic_2.jpg', 'text': 'Painting'},
@@ -23,8 +31,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     {'image': 'assets/image/slide4.jpg', 'text': 'Illustration'},
   ];
 
-  final TextEditingController _controller1 = TextEditingController();
-  final TextEditingController _controller2 = TextEditingController();
+  final jobTitleControl = TextEditingController();
+  final jobDescControl = TextEditingController();
+
   int? _selectedOption = 0;
   AuthController _authController =
       AuthController(); // Initialize AuthController
@@ -32,6 +41,21 @@ class _HomePageState extends ConsumerState<HomePage> {
   bool _isCheckbox1Checked = false;
   bool _isCheckbox2Checked = false;
   bool _isCheckbox3Checked = false;
+  final Uuid uuid = Uuid();
+
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   void _navigateWithFade(BuildContext context, Widget targetPage) {
     Navigator.of(context).pushReplacement(
@@ -62,6 +86,38 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() {
       _files.removeAt(index);
     });
+  }
+
+  Future<String> _generateCustomId() async {
+    final DocumentReference counterRef =
+        FirebaseFirestore.instance.collection('counters').doc('jobCounter');
+    return FirebaseFirestore.instance.runTransaction((transaction) async {
+      final DocumentSnapshot snapshot = await transaction.get(counterRef);
+
+      if (!snapshot.exists) {
+        throw Exception("Counter document does not exist!");
+      }
+
+      int currentCounter = snapshot.get('counter');
+      int newCounter = currentCounter + 1;
+      transaction.update(counterRef, {'counter': newCounter});
+
+      return 'Job_${newCounter.toString().padLeft(4, '0')}';
+    });
+  }
+
+  Future<List<String>> _uploadFiles(List<File> files) async {
+    List<String> downloadUrls = [];
+    for (File file in files) {
+      String fileName = file.path.split('/').last;
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child('jobs/$fileName');
+      UploadTask uploadTask = storageRef.putFile(file);
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      downloadUrls.add(downloadUrl);
+    }
+    return downloadUrls;
   }
 
   @override
@@ -109,7 +165,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             child: TextButton(
               onPressed: () {
-                _navigateWithFade(context, const FreelancePage());
+                _navigateWithFade(context, const SplashC());
               },
               child: const Text(
                 "Switch to Selling",
@@ -118,6 +174,45 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            const UserAccountsDrawerHeader(
+              accountName: Text("User"),
+              accountEmail: Text("user@example.com"),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: AssetImage('assets/image/Profile_pic.png'),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                _navigateWithFade(context, const HomePage());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.list_alt),
+              title: const Text('Orders'),
+              onTap: () {
+                print("Navigating to Orders...");
+              },
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ListTile(
+                leading: const Icon(Icons.exit_to_app),
+                title: const Text('Logout'),
+                onTap: () {
+                  _authController.signOut(context, ref);
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
@@ -143,30 +238,42 @@ class _HomePageState extends ConsumerState<HomePage> {
                   top: 130), // Padding to avoid overlap with AppBar
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white
-                            .withOpacity(0.8), // Make it slightly transparent
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          border: InputBorder.none,
-                          icon: Icon(Icons.search, color: Colors.black54),
-                        ),
-                      ),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                  //   child: Container(
+                  //     padding: const EdgeInsets.symmetric(horizontal: 16),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.white
+                  //           .withOpacity(0.8), // Make it slightly transparent
+                  //       borderRadius: BorderRadius.circular(12),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: Colors.grey.withOpacity(0.3),
+                  //           spreadRadius: 2,
+                  //           blurRadius: 5,
+                  //           offset: const Offset(0, 3),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: const TextField(
+                  //       decoration: InputDecoration(
+                  //         hintText: 'Search...',
+                  //         border: InputBorder.none,
+                  //         icon: Icon(Icons.search, color: Colors.black54),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  //const SizedBox(height: 20),
+                  const Align(
+                    alignment: Alignment.center, // Align the text to the left
+                    child: Text(
+                      'Top Services',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
                     ),
                   ),
                   CarouselSlider(
@@ -177,112 +284,155 @@ class _HomePageState extends ConsumerState<HomePage> {
                       viewportFraction: 0.6,
                       aspectRatio: 16 / 9,
                     ),
-                    items: imgList
-                        .map((item) => Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 5),
-                              width: 300,
-                              height: 200,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.asset(
-                                      item['image']!,
-                                      width: 300,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    item['text']!,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
+                    items: imgList.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      Map<String, String> item = entry.value;
+                      return InkWell(
+                        onTap: () {
+                          // Handle image click based on index
+                          if (index == 0) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SplashProfileC(
+                                    targetPage: SketchingServicesPage()),
                               ),
-                            ))
-                        .toList(),
+                            );
+                          } else if (index == 1) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SplashProfileC(
+                                    targetPage: PaintingServicesPage()),
+                              ),
+                            );
+                          } else if (index == 2) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SplashProfileC(
+                                    targetPage: ThreeDModelsPage()),
+                              ),
+                            );
+                          } else if (index == 3) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SplashProfileC(
+                                    targetPage: IllustrationServicesPage()),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 5),
+                          width: 300,
+                          height: 200,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.asset(
+                                  item['image']!,
+                                  width: 300,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item['text']!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                  const SizedBox(height: 5),
                   const Align(
                     alignment:
                         Alignment.centerLeft, // Align the text to the left
                     child: Padding(
                       padding: EdgeInsets.only(
-                          left: 40.0), // Optional: add left padding if needed
+                          left: 36.0), // Optional: add left padding if needed
                       child: Text(
                         'Post a Job',
                         style: TextStyle(
+                            fontFamily: 'Montserrat',
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.black),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30), // Add left and right padding
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _controller1,
-                        decoration: const InputDecoration(
-                          hintText: 'Job Title',
-                          border: InputBorder.none,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 0, 0, 0)
+                                  .withOpacity(0.6),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
+                        child: TextFormField(
+                          controller: jobTitleControl,
+                          decoration: InputDecoration(
+                            hintText: '   Job Title',
+                            border: InputBorder.none,
+                          ),
+                          style: TextStyle(
+                              color: Color.fromARGB(255, 134, 134, 134)),
+                        )),
                   ),
                   const SizedBox(height: 20),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30), // Add left and right padding
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _controller2,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          hintText: 'Job Description',
-                          border: InputBorder.none,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 0, 0, 0)
+                                  .withOpacity(0.6),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
+                        child: TextFormField(
+                          controller: jobDescControl,
+                          decoration: InputDecoration(
+                            hintText: 'Job Description',
+                            border: InputBorder.none,
+                          ),
+                          style: TextStyle(color: Colors.grey),
+                          textAlign: TextAlign.left,
+                        )),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _pickFiles,
-                    child: const Text('Attach File'),
+                    child: const Text('Attach Files'),
                   ),
                   if (_files.isNotEmpty)
                     Padding(
@@ -295,7 +445,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                             children: [
                               file.path.endsWith('.jpg') ||
                                       file.path.endsWith('.jpeg') ||
-                                      file.path.endsWith('.png')
+                                      file.path.endsWith('.png') ||
+                                      file.path.endsWith('.pdf')
                                   ? SizedBox(
                                       width: 100, // Set the desired width
                                       height: 100, // Set the desired height
@@ -314,7 +465,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         }).toList(),
                       ),
                     ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   const Align(
                     alignment:
                         Alignment.centerLeft, // Align the text to the left
@@ -330,12 +481,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
                   ),
+                  SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25),
                     child: Row(
                       children: [
                         Radio<int>(
-                          // Your existing category selection
                           value: 0,
                           groupValue: _selectedOption,
                           onChanged: (int? value) {
@@ -344,7 +495,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             });
                           },
                         ),
-                        const Text('3D'),
+                        const Text('2D'),
                         Radio<int>(
                           value: 1,
                           groupValue: _selectedOption,
@@ -354,7 +505,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             });
                           },
                         ),
-                        const Text('2D'),
+                        const Text('3D'),
                         Radio<int>(
                           value: 2,
                           groupValue: _selectedOption,
@@ -368,7 +519,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   const Align(
                     alignment:
                         Alignment.centerLeft, // Align the text to the left
@@ -385,11 +536,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: Column(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Row(
                       children: [
-                        CheckboxListTile(
-                          title: const Text('Social Media'),
+                        Checkbox(
                           value: _isCheckbox1Checked,
                           onChanged: (bool? value) {
                             setState(() {
@@ -397,8 +547,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                             });
                           },
                         ),
-                        CheckboxListTile(
-                          title: const Text('Youtube'),
+                        Text('Social Media'),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Row(
+                      children: [
+                        Checkbox(
                           value: _isCheckbox2Checked,
                           onChanged: (bool? value) {
                             setState(() {
@@ -406,8 +563,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                             });
                           },
                         ),
-                        CheckboxListTile(
-                          title: const Text('Web Development'),
+                        Text('Youtube'),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    child: Row(
+                      children: [
+                        Checkbox(
                           value: _isCheckbox3Checked,
                           onChanged: (bool? value) {
                             setState(() {
@@ -415,37 +579,79 @@ class _HomePageState extends ConsumerState<HomePage> {
                             });
                           },
                         ),
+                        Text('Branding'),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 19, 95, 255),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 10),
+                  Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      const SizedBox(height: 5),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 19, 95, 255),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      onPressed: () {
-                        // Add your button action here
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal:
-                                30.0), // Add padding inside the button text
-                        child: Text(
-                          'Post Job',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        onPressed: () async {
+                          String customId =
+                              await _generateCustomId(); // Generate a custom unique ID
+                          List<String> downloadUrls = await _uploadFiles(
+                              _files); // Upload files and get download URLs
+                          CollectionReference collRef =
+                              FirebaseFirestore.instance.collection('jobs');
+                          await collRef.doc(customId).set({
+                            'id':
+                                customId, // Store the custom unique ID in the document
+                            'images': downloadUrls, // Store the download URLs
+                            'jobTitle': jobTitleControl.text,
+                            'jobDesc': jobDescControl.text,
+                            'category': _selectedOption,
+                            'fields': {
+                              'SocialMedia': _isCheckbox1Checked,
+                              'Youtube': _isCheckbox2Checked,
+                              'Branding': _isCheckbox3Checked,
+                            },
+                          });
+
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Job posted successfully'),
+                            ),
+                          );
+
+                          // Clear text fields and reset state
+                          jobTitleControl.clear();
+                          jobDescControl.clear();
+                          setState(() {
+                            _selectedOption = 0;
+                            _isCheckbox1Checked = false;
+                            _isCheckbox2Checked = false;
+                            _isCheckbox3Checked = false;
+                            _files.clear();
+                          });
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  30.0), // Add padding inside the button text
+                          child: Text(
+                            'Post Job',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -454,77 +660,17 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 19, 95, 255),
-              ),
-              child: Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.exit_to_app),
-              title: const Text('Logout'),
-              onTap: () {
-                _authController.signOut(context, ref);
-                // For example, you could clear user data, navigate to login screen, etc.
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0, // Set initial index if needed
         onTap: (int index) {
-          setState(() {
-            if (index == 0) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-              );
-            } else if (index == 1) {
-              print("Cart tapped");
-            } else if (index == 2) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilePage()),
-              );
-            }
-          });
+          if (index == 0) {
+            _navigateWithFade(context, SplashProfileC(targetPage: HomePage()));
+          } else if (index == 1) {
+            print("Cart tapped");
+          } else if (index == 2) {
+            _navigateWithFade(
+                context, SplashProfileC(targetPage: ProfilePage()));
+          }
         },
         items: const [
           BottomNavigationBarItem(
