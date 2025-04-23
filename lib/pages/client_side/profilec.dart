@@ -58,6 +58,8 @@ class _ProfilePageState extends State<ProfilePage> {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection("preferences")
           .doc(userId)
+          .collection("Intrests")
+          .doc("Topics")
           .get();
 
       if (doc.exists) {
@@ -98,7 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 34, 100, 223), // Light blue
+              Color.fromARGB(255, 0, 67, 192), // Light blue
               Color.fromARGB(255, 192, 215, 255), // White blue
             ],
           ),

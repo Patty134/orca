@@ -1,193 +1,275 @@
 import 'package:flutter/material.dart';
-import 'package:orca/pages/home/home_f.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:orca/data/model/auth.dart';
+import 'package:orca/data/storage/user_Data.dart';
+import 'package:orca/pages/client_side/profilec.dart';
+import 'package:orca/pages/home/home_c.dart';
+import 'package:orca/pages/splash/splash_profile_c.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FreelancerProfilePage extends StatefulWidget {
-  const FreelancerProfilePage({Key? key}) : super(key: key);
-
   @override
   State<FreelancerProfilePage> createState() => _FreelancerProfilePageState();
 }
 
 class _FreelancerProfilePageState extends State<FreelancerProfilePage> {
-  int _currentIndex = 1; // Default to Profile Page
+  UserStore _userStore = UserStore();
+  UserModel _userModel = UserModel();
+  List<String> _preferences = [];
 
-  // Define the navigation logic for each BottomNav button
-  void _navigateToPage(int index) {
-    if (_currentIndex != index) {
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+    _loadPreferences();
+  }
+
+  Future<void> loadUser() async {
+    _userModel = await _userStore.loadData();
+    setState(() {});
+  }
+
+  Future<void> _loadPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? cachedPreferences = prefs.getStringList('preferences');
+
+    if (cachedPreferences != null) {
       setState(() {
-        _currentIndex = index;
+        _preferences = cachedPreferences;
       });
-
-      Widget targetPage;
-      switch (index) {
-        case 0:
-          targetPage = const FreelancePage(); // Home Page
-          break;
-        case 1:
-          targetPage = const FreelancerProfilePage(); // Profile Page
-          break;
-        case 2:
-          targetPage = const FreelancerProfilePage(); // Settings Page
-          break;
-        default:
-          targetPage = const FreelancerProfilePage();
-      }
-
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => targetPage,
-          transitionDuration: const Duration(milliseconds: 300),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-        ),
-      );
+    } else {
+      _fetchPreferences();
     }
+  }
+
+  Future<void> _fetchPreferences() async {
+    // Get the current user's UID
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("No user is signed in");
+      return;
+    }
+    String userId = user.uid;
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection("preferences")
+          .doc(userId)
+          .collection("Skills")
+          .doc("Softwares")
+          .get();
+
+      if (doc.exists) {
+        List<String> preferences = List<String>.from(doc["selection"]);
+        setState(() {
+          _preferences = preferences;
+        });
+
+        // Cache the preferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setStringList('preferences', preferences);
+      } else {
+        print("No preferences found for this user");
+      }
+    } on FirebaseException catch (e) {
+      print("Error fetching preferences: ${e.message}");
+    }
+  }
+
+  void _navigateWithFade(BuildContext context, Widget targetPage) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => targetPage,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Gradient Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 46, 122, 255), // Blue shade
-                  Color.fromARGB(255, 0, 10, 156), // Purple shade
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.fromARGB(255, 0, 60, 170), // Light blue
+              Color.fromARGB(255, 192, 215, 255), // White blue
+            ],
           ),
-          // Content
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  // Back Button
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        _navigateToPage(0); // Navigate to Home Page
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Profile Header
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(5.0), // Border padding
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.5), // Shadow
-                                spreadRadius: 8,
-                                blurRadius: 10,
-                                offset: const Offset(0, 0),
-                              ),
-                            ],
-                            shape: BoxShape.circle,
-                            color: const Color.fromARGB(
-                                255, 255, 255, 255), // Border color
-                          ),
-                          child: const CircleAvatar(
-                            radius: 50,
-                            backgroundImage:
-                                AssetImage('assets/image/profile_pict.png'),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "John Doe",
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
-                        const Text(
-                          "Graphic Designer & 3D Artist",
-                          style: TextStyle(fontSize: 16, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Skills Section
-                  sectionHeader("Skills"),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 10,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      skillChip("Photoshop"),
-                      skillChip("Illustrator"),
-                      skillChip("Blender"),
-                      skillChip("3D Modeling"),
-                      skillChip("Animation"),
-                      skillChip("UI/UX Design"),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: AppBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          leading: IconButton(
+                            icon: const Icon(Icons.arrow_back,
+                                color: Colors.black),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      SplashProfileC(targetPage: HomePage()),
+                                ),
+                              );
+                            },
+                          ),
+                          title: const Text(
+                            'Profile',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          centerTitle: true,
+                        ),
+                      ),
+                      const CircleAvatar(
+                        radius: 50,
+                        backgroundImage: AssetImage(
+                            'assets/image/Profile_pic.png'), // Profile picture
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _userModel.name != null
+                            ? _userModel.name ?? ""
+                            : "User",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _userModel.description != null &&
+                                _userModel.description!.isNotEmpty
+                            ? _userModel.description ?? ""
+                            : "Manager at Wix Studio",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Divider(
+                          color: Colors.grey, indent: 16, endIndent: 16),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ListTile(
+                          leading: Icon(Icons.email, color: Colors.black),
+                          title: Text("Email"),
+                          subtitle: Text(_userModel.email != null &&
+                                  _userModel.email!.isNotEmpty
+                              ? _userModel.email ?? ""
+                              : "abc@gmai.com"),
+                        ),
+                      ),
+                      const Divider(
+                          color: Colors.grey, indent: 16, endIndent: 16),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ListTile(
+                          leading: Icon(Icons.phone, color: Colors.black),
+                          title: Text('Mobile'),
+                          subtitle: Text(_userModel.phone != null &&
+                                  _userModel.phone!.isNotEmpty
+                              ? _userModel.phone ?? ""
+                              : "no Phone number"),
+                          trailing: Icon(Icons.edit),
+                        ),
+                      ),
+                      const Divider(
+                          color: Colors.grey, indent: 16, endIndent: 16),
+                      const SizedBox(height: 10),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 35.0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'My Interests',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10.0, vertical: 0),
+                        child: Wrap(
+                          spacing: 10,
+                          children: _preferences
+                              .map((preference) => skillChip(preference))
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // Experience Section
-                  sectionHeader("Experience"),
-                  const SizedBox(height: 8),
-                  experienceTile("Graphic Designer",
-                      "Red Chillies Entertainment", "June 2020 - Present"),
-                  experienceTile(
-                      "3D Artist", "Sketch Studio", "Jan 2018 - May 2020"),
-                  const SizedBox(height: 20),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          _navigateToPage(index);
+        currentIndex: 0, // Set initial index if needed
+        onTap: (int index) {
+          if (index == 0) {
+            _navigateWithFade(context, SplashProfileC(targetPage: HomePage()));
+          } else if (index == 1) {
+            print("Cart tapped");
+          } else if (index == 2) {
+            _navigateWithFade(
+                context, SplashProfileC(targetPage: FreelancerProfilePage()));
+          }
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Padding(
+              padding: EdgeInsets.only(top: 4.0), // Add padding here
+              child: Icon(Icons.home),
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_rounded),
-            label: 'Chats',
+            icon: Padding(
+              padding: EdgeInsets.only(top: 4.0), // Add padding here
+              child: Icon(Icons.chat_rounded),
+            ),
+            label: 'Chat',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Padding(
+              padding: EdgeInsets.only(top: 4.0), // Add padding here
+              child: Icon(Icons.account_circle),
+            ),
             label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-
-  Widget sectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
+        backgroundColor: const Color.fromARGB(
+            255, 255, 255, 255), // Background color of the bottom nav bar
+        selectedItemColor: Colors.black, // Selected icon color
+        unselectedItemColor: Colors.black, // Unselected icon color
+        showUnselectedLabels: true, // Display unselected labels
+        iconSize: 24, // Adjust the icon size if needed
+        elevation: 10, // Optional: adjust the elevation of the bottom nav bar
       ),
     );
   }
@@ -197,21 +279,6 @@ class _FreelancerProfilePageState extends State<FreelancerProfilePage> {
       label: Text(skill),
       backgroundColor: Colors.white.withOpacity(0.8),
       labelStyle: const TextStyle(color: Colors.black),
-    );
-  }
-
-  Widget experienceTile(String title, String company, String duration) {
-    return ListTile(
-      leading: const Icon(Icons.work, color: Colors.white70),
-      title: Text(
-        title,
-        style:
-            const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-      ),
-      subtitle: Text(
-        "$company\n$duration",
-        style: const TextStyle(color: Colors.white70),
-      ),
     );
   }
 }

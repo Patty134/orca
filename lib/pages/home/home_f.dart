@@ -262,7 +262,7 @@ class _FreelancePageState extends ConsumerState<FreelancePage> {
               // Navigate to Chats page if it exists
               break;
             case 2:
-              _navigateWithFade(context, const FreelancerProfilePage());
+              _navigateWithFade(context, FreelancerProfilePage());
               break;
           }
         },

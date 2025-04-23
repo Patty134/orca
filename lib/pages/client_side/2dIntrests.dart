@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:orca/pages/client_side/3dIntrests.dart';
-import 'package:orca/pages/welcome.dart';
 
 class TwoDInterestPage extends StatefulWidget {
   const TwoDInterestPage({super.key});
@@ -60,10 +59,26 @@ class _TwoDInterestPageState extends State<TwoDInterestPage> {
     String userId = user.uid;
 
     try {
-      await FirebaseFirestore.instance
+      DocumentReference docRef = FirebaseFirestore.instance
           .collection("preferences")
           .doc(userId)
-          .set({"selection": selectedOptions}, SetOptions(merge: true));
+          .collection("Intrests")
+          .doc("Topics");
+
+      DocumentSnapshot doc = await docRef.get();
+
+      if (doc.exists) {
+        Map<String, dynamic> existingData = doc.data() as Map<String, dynamic>;
+        List<String> existingSelections = [];
+        if (existingData.containsKey("selection")) {
+          existingSelections = List<String>.from(existingData["selection"]);
+        }
+        existingSelections.addAll(selectedOptions);
+        selectedOptions =
+            existingSelections.toSet().toList(); // Remove duplicates
+      }
+
+      await docRef.set({"selection": selectedOptions}, SetOptions(merge: true));
       print("Data sent to Firestore");
     } on FirebaseException catch (e) {
       print("Error sending data to Firestore: ${e.message}");

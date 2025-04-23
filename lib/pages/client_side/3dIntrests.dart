@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:orca/pages/welcome.dart';
+import 'package:orca/pages/divider/welcome.dart';
 
 class ThreeDInterestPage extends StatefulWidget {
   const ThreeDInterestPage({super.key});
@@ -57,8 +57,11 @@ class _ThreeDInterestPageState extends State<ThreeDInterestPage> {
     String userId = user.uid;
 
     try {
-      DocumentReference docRef =
-          FirebaseFirestore.instance.collection("preferences").doc(userId);
+      DocumentReference docRef = FirebaseFirestore.instance
+          .collection("preferences")
+          .doc(userId)
+          .collection("Intrests")
+          .doc("Topics");
 
       DocumentSnapshot doc = await docRef.get();
 

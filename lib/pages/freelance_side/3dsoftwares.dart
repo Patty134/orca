@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:orca/data/model/preferences.dart';
 import 'package:orca/data/storage/user_Data.dart';
+import 'package:orca/pages/divider/welcome_f.dart';
 import 'package:orca/pages/splash/welcomef.dart';
-import 'package:orca/pages/welcome.dart';
+import 'package:orca/pages/divider/welcome.dart';
 
 class ThreeDSoftwarePage extends StatefulWidget {
   const ThreeDSoftwarePage({super.key});
@@ -35,32 +37,55 @@ class _ThreeDSoftwarePageState extends State<ThreeDSoftwarePage> {
   // This method logs selected options and navigates to WelcomePage
   Future<void> _submit() async {
     print('Selected checkboxes:');
-    List<Map<String, bool>> selectedOptions = [];
+
+    List<String> selectedOptions = [];
     for (int i = 0; i < _checkboxValues.length; i++) {
       if (_checkboxValues[i]) {
-        print(_options[i]);
-        selectedOptions.add({_options[i]: true});
+        selectedOptions.add(_options[i]);
       }
     }
 
-    // Navigate to WelcomePage1
+    await sendToUserDoc(selectedOptions);
+    // Navigate to WelcomePage
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => WelcomePage()),
+      MaterialPageRoute(builder: (context) => WelcomePageF()),
     );
   }
 
-  Future<void> sendToUserDoc(PreferencesModel preference) async {
-    UserStore _userStore = UserStore();
-    final usermodel = await _userStore.loadData();
+  Future<void> sendToUserDoc(List<String> selectedOptions) async {
+    // Get the current user's UID
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("No user is signed in");
+      return;
+    }
+    String userId = user.uid;
+
     try {
-      FirebaseFirestore.instance
-          .collection("users")
-          .doc(usermodel.id)
-          .set({"preferences": {}}, SetOptions(merge: true));
-      print("Data sent to firestore");
+      DocumentReference docRef = FirebaseFirestore.instance
+          .collection("preferences")
+          .doc(userId)
+          .collection("Skills")
+          .doc("Softwares");
+
+      DocumentSnapshot doc = await docRef.get();
+
+      if (doc.exists) {
+        Map<String, dynamic> existingData = doc.data() as Map<String, dynamic>;
+        List<String> existingSelections = [];
+        if (existingData.containsKey("selection")) {
+          existingSelections = List<String>.from(existingData["selection"]);
+        }
+        existingSelections.addAll(selectedOptions);
+        selectedOptions =
+            existingSelections.toSet().toList(); // Remove duplicates
+      }
+
+      await docRef.set({"selection": selectedOptions}, SetOptions(merge: true));
+      print("Data sent to Firestore");
     } on FirebaseException catch (e) {
-      print("Error sending data to firestore: ${e.message}");
+      print("Error sending data to Firestore: ${e.message}");
     }
   }
 

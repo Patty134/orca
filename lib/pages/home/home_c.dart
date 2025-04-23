@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:orca/data/model/auth.dart';
 import 'package:orca/data/storage/user_Data.dart';
 import 'package:orca/logic/controller/auth.dart';
+import 'package:orca/pages/client_side/chats.dart';
 import 'package:orca/pages/client_side/profilec.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:orca/pages/client_side/showcase/3dmodel.dart';
@@ -218,13 +219,6 @@ class _HomePageState extends ConsumerState<HomePage>
               title: const Text('Home'),
               onTap: () {
                 _navigateWithFade(context, const HomePage());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.list_alt),
-              title: const Text('Orders'),
-              onTap: () {
-                print("Navigating to Orders...");
               },
             ),
             const Spacer(),
@@ -694,7 +688,7 @@ class _HomePageState extends ConsumerState<HomePage>
           if (index == 0) {
             _navigateWithFade(context, SplashProfileC(targetPage: HomePage()));
           } else if (index == 1) {
-            print("Cart tapped");
+            _navigateWithFade(context, SplashProfileC(targetPage: ChatPage()));
           } else if (index == 2) {
             _navigateWithFade(
                 context, SplashProfileC(targetPage: ProfilePage()));
